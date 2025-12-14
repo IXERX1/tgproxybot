@@ -64,25 +64,37 @@ def ask_promo(message):
     bot.send_message(message.chat.id, "✍️ Введи промокод:")
     bot.register_next_step_handler(message, use_promo)
 
+
 def use_promo(message):
     promo = message.text.strip()
+
     users = load_json("users.json")
     promos = load_json("promocodes.json")
     user = users[str(message.from_user.id)]
 
     if promo not in promos:
-        bot.send_message(message.chat.id, "❌ Такого промокода нет")
+        bot.send_message(
+            message.chat.id,
+            "❌ Такого промокода нет или он уже использован"
+        )
         return
 
-    if promo in user["used_promos"]:
-        bot.send_message(message.chat.id, "❌ Ты уже юзал этот промокод")
-        return
-
+    # начисляем деньги
     user["balance"] += promos[promo]
-    user["used_promos"].append(promo)
-    save_json("users.json", users)
 
-    bot.send_message(message.chat.id, f"✅ Промокод принят! +{promos[promo]} ₽")
+    # ❌ УДАЛЯЕМ промокод навсегда
+    del promos[promo]
+
+    save_json("users.json", users)
+    save_json("promocodes.json", promos)
+
+    bot.send_message(
+        message.chat.id,
+        "✅ Промокод принят!\n"
+        "💰 +10 ₽ зачислено\n"
+        "⛔ Промокод больше недоступен"
+    )
+
 
 # ---------- buy set ----------
 
