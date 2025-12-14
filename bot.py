@@ -2,7 +2,7 @@ import telebot
 import json
 from telebot import types
 
-TOKEN = "ТУТ_ТВОЙ_ТОКЕН"
+TOKEN = "8338700633:AAEqcTmh2yRW_X4AtoKfeanRw_T3zjDpfAI"
 bot = telebot.TeleBot(TOKEN)
 
 # ---------- utils ----------
