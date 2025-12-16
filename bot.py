@@ -8,7 +8,6 @@ bot = telebot.TeleBot(TOKEN)
 ADMIN_ID = 1896845654
 CHANNEL_USERNAME = "@oT3iBu"
 
-
 # ---------- utils ----------
 
 def load_json(file):
@@ -22,7 +21,6 @@ def save_json(file, data):
 def load_sets():
     return load_json("sets_accounts.json")
 
-
 def is_subscribed(user_id):
     try:
         status = bot.get_chat_member(CHANNEL_USERNAME, user_id).status
@@ -30,19 +28,15 @@ def is_subscribed(user_id):
     except:
         return False
 
-
 # ---------- START ----------
 
 @bot.message_handler(commands=["start"])
 def start(message):
-    user_id = str(message.from_user.id)
     users = load_json("users.json")
+    uid = str(message.from_user.id)
 
-    if user_id not in users:
-        users[user_id] = {
-            "balance": 0,
-            "bought": 0
-        }
+    if uid not in users:
+        users[uid] = {"balance": 0, "bought": 0}
         save_json("users.json", users)
 
     if not is_subscribed(message.from_user.id):
@@ -59,7 +53,6 @@ def start(message):
 
     show_main_menu(message)
 
-
 def show_main_menu(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("👤 Профиль", "🎁 Ввести промокод")
@@ -74,7 +67,6 @@ def show_main_menu(message):
         reply_markup=markup
     )
 
-
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def check_sub(call):
     if is_subscribed(call.from_user.id):
@@ -82,7 +74,6 @@ def check_sub(call):
         show_main_menu(call.message)
     else:
         bot.answer_callback_query(call.id, "❌ Ты не подписался", show_alert=True)
-
 
 # ---------- PROFILE ----------
 
@@ -98,14 +89,12 @@ def profile(message):
         f"📦 Куплено: {user['bought']}"
     )
 
-
-# ---------- PROMO (ОДНОРАЗОВЫЕ) ----------
+# ---------- PROMO (ОДНОРАЗОВЫЕ, ИСПРАВЛЕНО) ----------
 
 @bot.message_handler(func=lambda m: m.text == "🎁 Ввести промокод")
 def ask_promo(message):
     bot.send_message(message.chat.id, "✍️ Введи промокод:")
     bot.register_next_step_handler(message, use_promo)
-
 
 def use_promo(message):
     promo = message.text.strip()
@@ -116,14 +105,18 @@ def use_promo(message):
         bot.send_message(message.chat.id, "❌ Промокод недействителен")
         return
 
-    users[str(message.from_user.id)]["balance"] += promos[promo]
+    amount = promos[promo]
+
+    users[str(message.from_user.id)]["balance"] += amount
     del promos[promo]
 
     save_json("users.json", users)
     save_json("promocodes.json", promos)
 
-    bot.send_message(message.chat.id, "✅ Промокод принят! +10 ₽")
-
+    bot.send_message(
+        message.chat.id,
+        f"✅ Промокод принят!\n💰 +{amount} ₽ зачислено"
+    )
 
 # ---------- BUY SET ----------
 
@@ -139,7 +132,6 @@ def buy_set_menu(message):
         ))
 
     bot.send_message(message.chat.id, "🧰 Выбери сервер:", reply_markup=markup)
-
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("set_"))
 def show_set(call):
@@ -160,7 +152,6 @@ def show_set(call):
             caption=f"{data['description']}\nЦена: {data['price']} ₽",
             reply_markup=markup
         )
-
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("buyset_"))
 def buy_set(call):
@@ -189,7 +180,6 @@ def buy_set(call):
         f"🔑 Пароль: {account['password']}"
     )
 
-
 # ---------- BUY PROXY ----------
 
 @bot.message_handler(func=lambda m: m.text == "🛒 Купить прокси")
@@ -215,7 +205,6 @@ def buy_proxy(message):
 
     bot.send_message(message.chat.id, f"✅ Твоя прокси:\n{proxy}")
 
-
 # ---------- ADMIN PANEL ----------
 
 @bot.message_handler(func=lambda m: m.text == "⚙️ Админ-панель")
@@ -229,12 +218,10 @@ def admin_panel(message):
 
     bot.send_message(message.chat.id, "⚙️ Админ-панель", reply_markup=markup)
 
-
 @bot.message_handler(func=lambda m: m.text == "➕ Промокод")
 def add_promo(message):
-    bot.send_message(message.chat.id, "Формат: CODE 10")
+    bot.send_message(message.chat.id, "Формат: CODE 50")
     bot.register_next_step_handler(message, save_promo)
-
 
 def save_promo(message):
     code, amount = message.text.split()
@@ -243,18 +230,18 @@ def save_promo(message):
     save_json("promocodes.json", promos)
     bot.send_message(message.chat.id, "✅ Промокод добавлен")
 
-
 @bot.message_handler(func=lambda m: m.text == "➕ Прокси")
 def add_proxy(message):
     bot.send_message(message.chat.id, "Отправь прокси")
-    bot.register_next_step_handler(message, lambda m: open("proxies.txt", "a").write(m.text + "\n"))
-
+    bot.register_next_step_handler(
+        message,
+        lambda m: open("proxies.txt", "a", encoding="utf-8").write(m.text + "\n")
+    )
 
 @bot.message_handler(func=lambda m: m.text == "➕ Аккаунт сета")
 def add_set_acc(message):
     bot.send_message(message.chat.id, "Формат: HolyWorld login password")
     bot.register_next_step_handler(message, save_set_acc)
-
 
 def save_set_acc(message):
     server, login, password = message.text.split()
@@ -263,11 +250,9 @@ def save_set_acc(message):
     save_json("sets_accounts.json", sets)
     bot.send_message(message.chat.id, "✅ Аккаунт добавлен")
 
-
 @bot.message_handler(func=lambda m: m.text == "⬅️ Назад")
 def back(message):
     show_main_menu(message)
-
 
 # ---------- RUN ----------
 
